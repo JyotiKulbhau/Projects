@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Chat</title>
+<script src="/webjars/sockjs-client/1.5.1/sockjs.min.js"></script>
+<script src="/webjars/stomp-websocket/2.3.4/stomp.min.js"></script>
+<style>
+.container {
+	font-style: 20px;
+}
+
+.chat {
+	display: inline-block;
+}
+</style>
+</head>
+
+<body>
+	<div class="container">
+		<label>From : </label> <input type="text" id="from"
+			placeholder="Your name"> <label>Message : </label><input
+			type="text" id="content" placeholder="Your message">
+		<button onclick="sendMessage()">Send</button>
+	</div>
+	<div id="chat"></div>
+
+	<script>
+		var stompClient = null;
+
+		function connect() {
+			var socket = new SockJS('/ws'); // must match /ws in your backend config
+			stompClient = Stomp.over(socket);
+
+			stompClient.connect({}, function(frame) {
+				console.log('Connected: ' + frame);
+
+				stompClient.subscribe('/topic/messages', function(message) {
+					const msg = JSON.parse(message.body);
+					console.log("Message Received:", msg);
+					document.getElementById("chat").innerHTML += "<p><strong>"
+							+ msg.from + ":</strong> " + msg.content + "</p>"
+							+ "<small>Message sent on [" + msg.sentOn
+							+ "]</small>";
+				});
+			});
+		}
+
+		function sendMessage() {
+			const from = document.getElementById("from").value;
+			const content = document.getElementById("content").value;
+
+			stompClient.send("/app/send", {}, JSON.stringify({
+				from : from,
+				content : content
+			}));
+		}
+		//connect();
+		window.onload = connect;
+	</script>
+</body>
+</html>
